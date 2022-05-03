@@ -27,7 +27,7 @@ class ImageViewer(QGraphicsView):
         self.current_img_height = 0
         self.ratio = 1
 
-    def scale_image_view(self):
+    def scale_image_view(self, default_scale=1):
         # Масштабирование в представлении вида
         if self.current_pixmap:
             self.resetTransform()
@@ -44,28 +44,29 @@ class ImageViewer(QGraphicsView):
             # Смещение изображения к центру
             x = round((self.current_img_height * ratio_view - self.current_img_width) / 2)
             self.img_item.setPos(x, 0)
-            self.scale(self.ratio, self.ratio)
-            # self.fitInView(0, 0, self.current_img_width, self.current_img_height, mode=1)
-            # self.centerOn(round(self.current_img_width/2), round(self.current_img_height/2))
+            if default_scale == 1:
+                self.scale(self.ratio, self.ratio)
+            else:
+                self.scale(default_scale, default_scale)
 
-    def show_image(self):
+    def show_image(self, scale=1):
         try:
             self.current_pixmap = QPixmap(self.main.files.current_image)
         except FileNotFoundError:
             print('Ошибка открытия графического файлв')
             return
         self.img_item.setPixmap(self.current_pixmap)
-        self.scale_image_view()
+        self.scale_image_view(default_scale=scale)
 
     def mousePressEvent(self, event):
         # Обработка нажатия левой кнопки мыши
         if event.button() == Qt.LeftButton:
-            self.scale(self.ratio*2, self.ratio*2)
+            self.show_image(scale=2)
 
     def mouseReleaseEvent(self, event):
         # Обработка снятия нажатия левой кнопки мыши
         if event.button() == Qt.LeftButton:
-            self.scale_image_view()
+            self.show_image(scale=1)
 
 
 class MainWindow(QWidget):
