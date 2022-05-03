@@ -1,6 +1,6 @@
 import os  # операции с файлами
-from PyQt5.QtWidgets import (QLabel, QGraphicsDropShadowEffect)
-from PyQt5.QtGui import (QColor, QFont)
+from PyQt5.QtWidgets import (QLabel, QGraphicsDropShadowEffect, QTextEdit)
+from PyQt5.QtGui import (QColor, QFont, QTextCursor)
 from PyQt5.QtCore import Qt
 
 
@@ -30,6 +30,7 @@ class MyLabel(QLabel):
         path = drop_path[0]
         self.parent.files.scan_folder(path)
         self.parent.resize(800, 600)
+        self.parent.structure.setVisible(True)
         self.parent.show_image()
 
 
@@ -76,3 +77,56 @@ class InfoLabel(QLabel):
             self.move(10, self.parent.height() - 30)
             self.adjustSize()
             self.raise_()
+
+
+class StructureFolder(QTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.main = parent
+        self.move(2, 30)
+        self.resize(300, self.main.view.height() - 60)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setStyleSheet('background:transparent;')
+        self.setFrameShape(0)
+        self.setTextColor(QColor("#001100"))
+        self.font = QFont()
+        self.font.setPointSize(10)
+        self.font.setFamily('Liberation Serif')
+        self.setFont(self.font)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setTextInteractionFlags(Qt.NoTextInteraction)
+        self.setLineWrapMode(0)
+        self.show()
+
+    def update(self):
+        self.move(2, 30)
+        self.resize(300, self.main.view.height() - 60)
+        folders = self.main.files.folder_list
+        current_pos = None
+        if len(folders) > 0:
+            rows = 0
+            text = '<font color="#00ff00">'
+            current_dir = os.path.dirname(self.main.files.current_image)
+            for key in folders:
+                rows += 1
+                if os.path.abspath(key) == current_dir:
+                    bold = 'style="font-weight:bold; font-size: 13pt"'
+                    current_pos = rows
+                else:
+                    bold = ''
+                if folders[key][1] == 0:
+                    text += f'<div {bold}>{folders[key][0]} - {folders[key][2]}</div>'
+                else:
+                    margin = 15 * folders[key][1]
+                    text += f'<div style="margin-left: {margin}px" {bold}>└ {folders[key][0]} -' \
+                            f' {folders[key][2]}</div>'
+            self.setText(text)
+            if current_pos:
+                newCursor = self.textCursor()
+                newCursor.setPosition(0)
+                newCursor.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, current_pos)
+                self.setTextCursor(newCursor)
+                self.ensureCursorVisible()
+        self.raise_()

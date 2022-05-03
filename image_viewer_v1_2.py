@@ -92,9 +92,11 @@ class MainWindow(QWidget):
         self.view_subdir = self.view_menu.addAction('Структура каталога')
         self.view_subdir.setCheckable(True)
         self.view_subdir.setChecked(True)
+        self.view_subdir.triggered.connect(self.show_info_subfolder)
         self.view_info = self.view_menu.addAction('Информация')
         self.view_info.setCheckable(True)
         self.view_info.setChecked(True)
+        self.view_info.triggered.connect(self.show_info_label)
         self.menu.addMenu(self.file_menu)
         self.menu.addMenu(self.view_menu)
         # Настройка графического представления
@@ -102,6 +104,8 @@ class MainWindow(QWidget):
         self.view = ImageViewer(self)
         self.files = files.Files()
         self.info_label = label.InfoLabel(self)
+        self.structure = label.StructureFolder(self)
+        self.structure.setVisible(False)
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.view)
         self.view.setVisible(False)
@@ -117,9 +121,13 @@ class MainWindow(QWidget):
         self.setFocus()
 
     def show_image(self):
-        self.label.setVisible(False)
-        self.view.setVisible(True)
+        if self.label.isVisible():
+            self.label.setVisible(False)
+        if not self.view.isVisible():
+            self.view.setVisible(True)
         self.view.show_image()
+        self.info_label.update()
+        self.structure.update()
 
     def exit_programm(self):
         """Выход из программы"""
@@ -142,20 +150,29 @@ class MainWindow(QWidget):
             self.vbox.setContentsMargins(4, 24, 4, 4)
             self.showNormal()
 
-    def update_image(self):
-        self.setWindowTitle(os.path.basename(self.files.current_image))
-        self.show_image()
+    def show_info_label(self):
         if self.view_info.isChecked():
-            if not self.info_label.isVisible():
-                self.info_label.setVisible(True)
+            self.info_label.setVisible(True)
             self.info_label.update()
         elif self.info_label.isVisible():
             self.info_label.setVisible(False)
+
+    def show_info_subfolder(self):
+        if self.view_subdir.isChecked():
+            self.structure.setVisible(True)
+            self.structure.update()
+        elif self.structure.isVisible():
+            self.structure.setVisible(False)
+
+    def update_image(self):
+        self.setWindowTitle(os.path.basename(self.files.current_image))
+        self.show_image()
 
     def resizeEvent(self, event):
         # Перерисовка изображения при изменении размера
         self.view.scale_image_view()
         self.info_label.update()
+        self.structure.update()
 
     def keyPressEvent(self, event):
         """

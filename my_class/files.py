@@ -21,6 +21,7 @@ class Files:
         self.available_extensions = ('.bmp', '.pbm', '.pgm', '.ppm', '.xbm',
                                      '.xpm', '.jpg', '.jpeg', '.png', '.gif'
                                      )
+        self.folder_list = dict()
 
     def scan_folder(self, path):
         """
@@ -31,13 +32,20 @@ class Files:
         self.trash_path = os.path.join(self.current_folder, '___Deleted')
         self.select_path = os.path.join(self.current_folder, '___Selected')
         self.files_list = []  # очистка списка изображений
+        self.folder_list = dict()
         try:
             for dirpath, dirnames, files in os.walk(path):
+                subfolder = dirnames[:]
                 if len(files) > 0:
                     if ('___Selected' not in dirpath) and ('___Deleted' not in dirpath):
+                        count = 0
                         for name in files:
                             if os.path.splitext(name)[1].lower() in self.available_extensions:
                                 self.files_list.append(os.path.join(os.path.abspath(dirpath), name))
+                                count += 1
+                        if count > 0:
+                            level = dirpath.replace(path, '').count(os.sep)
+                            self.folder_list[dirpath] = [os.path.basename(dirpath), level, count]
             self.current_image = self.files_list[0]
             self.current_index = 0
             self.count_files = len(self.files_list)
@@ -99,7 +107,7 @@ class Files:
             print('Изображений в указанном каталоге нет')
             sys.exit(0)
         else:
-            if self.current_index >= 0:
+            if self.current_index > 0:
                 self.current_index -= 1
                 self.current_image = self.files_list[self.current_index]
             else:
