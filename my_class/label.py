@@ -83,6 +83,7 @@ class StructureFolder(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.main = parent
+        self.previos_dir = None
         self.move(2, 30)
         self.resize(300, self.main.view.height() - 60)
         self.setWindowFlags(Qt.FramelessWindowHint)
@@ -105,10 +106,10 @@ class StructureFolder(QTextEdit):
         self.resize(300, self.main.view.height() - 60)
         folders = self.main.files.folder_list
         current_pos = None
-        if len(folders) > 0:
+        current_dir = os.path.dirname(self.main.files.current_image)
+        if len(folders) > 0 and self.previos_dir != current_dir:
             rows = 0
             text = '<font color="#00ff00">'
-            current_dir = os.path.dirname(self.main.files.current_image)
             for key in folders:
                 rows += 1
                 if os.path.abspath(key) == current_dir:
@@ -123,6 +124,7 @@ class StructureFolder(QTextEdit):
                     text += f'<div style="margin-left: {margin}px" {bold}>└ {folders[key][0]} -' \
                             f' {folders[key][2]}</div>'
             self.setText(text)
+            self.previos_dir = current_dir
             if current_pos:
                 newCursor = self.textCursor()
                 newCursor.setPosition(0)
