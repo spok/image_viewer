@@ -35,7 +35,6 @@ class Files:
         self.folder_list = dict()
         try:
             for dirpath, dirnames, files in os.walk(path):
-                subfolder = dirnames[:]
                 if len(files) > 0:
                     if ('___Selected' not in dirpath) and ('___Deleted' not in dirpath):
                         count = 0
@@ -45,7 +44,7 @@ class Files:
                                 count += 1
                         if count > 0:
                             level = dirpath.replace(path, '').count(os.sep)
-                            self.folder_list[dirpath] = [os.path.basename(dirpath), level, count]
+                            self.folder_list[os.path.abspath(dirpath)] = [os.path.basename(dirpath), level, count]
             self.current_image = self.files_list[0]
             self.current_index = 0
             self.count_files = len(self.files_list)
@@ -185,14 +184,13 @@ class Files:
         if self.current_index > 0:
             self.current_index += 1
 
-        # Создание каталога в папке Deleted
-        destination_path = os.path.basename(os.path.dirname(self.current_image))
-        destination_path = os.path.join(self.trash_path, destination_path)
-        if os.path.isdir(destination_path) is False:
+        # Создание каталога Deleted если он не существует
+        if os.path.isdir(self.trash_path) is False:
             try:
-                os.mkdir(destination_path)
+                os.mkdir(self.trash_path)
             except (FileExistsError, PermissionError):
-                print(f'Не удалось сооздать каталог {destination_path} для удаляемых изображений')
+                print(f'Не удалось сооздать каталог {self.trash_path} для удаляемых изображений')
+
         # удаление всех изображений текущей папки из списка
         file_path = self.files_list[self.current_index]
         while os.path.dirname(file_path) == current_dir:
@@ -200,9 +198,10 @@ class Files:
             if self.current_index == self.count_files - 1:
                 self.current_index -= 1
             file_path = self.files_list[self.current_index]
-        # Удаление текущего каталога
+        # перенос текущего каталога в корзину
         try:
-            shutil.move(current_dir, destination_path)
+            shutil.move(current_dir, self.trash_path)
+            # shutil.move(current_dir, destination_path)
         except (FileExistsError, PermissionError) as e:
             print("Error: %s : %s" % (current_dir, e.strerror))
         self.count_files = len(self.files_list)

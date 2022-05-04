@@ -186,10 +186,11 @@ class MainWindow(QWidget):
             # Выход из программы
             elif event.key() == Qt.Key_Q:
                 self.exit_programm()
-            # изменения просматриваемого каталога
+            # перемещение к предыдущему каталогу
             elif event.key() == Qt.Key_PageUp:
                 self.files.previous_dir()
                 self.update_image()
+            # перемещение к следующему каталогу
             elif event.key() == Qt.Key_PageDown:
                 self.files.next_dir()
                 self.update_image()
@@ -212,17 +213,23 @@ class MainWindow(QWidget):
 
         # С зажатой клавишей Shift
         if int(event.modifiers()) == Qt.ShiftModifier:
-            # перемещение просматриваемого каталога
+            # перемещение просматриваемого каталога в избранное
             if event.key() == Qt.Key_Up:
+                key = os.path.dirname(self.files.current_image)
+                del self.files.folder_list[key]
                 self.files.move_dir()
                 self.update_image()
+            # перемещение просматриваемого каталога в корзину
             elif event.key() == Qt.Key_Down:
+                key = os.path.dirname(self.files.current_image)
+                del self.files.folder_list[key]
                 self.files.delete_dir()
                 self.update_image()
-            # изменения просматриваемого каталога
+            # перемещение к предыдущему каталогу
             elif event.key() == Qt.Key_Left:
                 self.files.previous_dir()
                 self.update_image()
+            # перемещение к следующему каталогу
             elif event.key() == Qt.Key_Right:
                 self.files.next_dir()
                 self.update_image()
