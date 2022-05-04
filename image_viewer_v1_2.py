@@ -36,10 +36,13 @@ class ImageViewer(QGraphicsView):
             ratio_view = w / h
             self.current_img_width = self.current_pixmap.width()
             self.current_img_height = self.current_pixmap.height()
-            if self.current_img_width / self.current_img_height > ratio_view:
-                self.ratio = w / self.current_img_width
-            else:
-                self.ratio = h / self.current_img_height
+            try:
+                if self.current_img_width / self.current_img_height > ratio_view:
+                    self.ratio = w / self.current_img_width
+                else:
+                    self.ratio = h / self.current_img_height
+            except ZeroDivisionError:
+                self.ratio = ratio_view
             self.scene.setSceneRect(0, 0, self.current_img_height * ratio_view, self.current_img_height)
             # Смещение изображения к центру
             x = round((self.current_img_height * ratio_view - self.current_img_width) / 2)

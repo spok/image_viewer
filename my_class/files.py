@@ -68,6 +68,109 @@ class Files:
         else:
             return str(round(size / 1048576, 1)), 'Мб'
 
+    def move_one_file(self, destination: str):
+        """
+        Перемещение одного файла в папку назначения
+        :param destination: путь к каталогу назначения
+        :return: None
+        """
+        # Если каталог назначения не существует то создаем его
+        if os.path.isdir(destination) is False:
+            try:
+                os.mkdir(destination)
+            except (FileExistsError, PermissionError):
+                print('Не удалось сооздать каталог для выделяемых изображений')
+        # Генерация пути для перемещаемого файла с учетом возможного повторения имени
+        i = 0
+        destination_new = os.path.join(destination, os.path.basename(self.current_image))
+        path, ext = os.path.splitext(destination_new)
+        while os.path.isfile(destination_new):
+            i += 1
+            new_path = path + f'_{i}'
+            destination_new = new_path + ext
+        # Перемещение файла в каталог назначения
+        try:
+            shutil.move(self.current_image, destination_new)
+        except (FileExistsError, PermissionError):
+            shutil.copy(self.current_image, destination_new)
+        # Удаление перемещенного файла из списка изображений
+        self.files_list.remove(self.current_image)
+        self.count_files = len(self.files_list)
+        # Смещение текущего индекса при удалении последнего в списке файла
+        if self.current_index > self.count_files - 1:
+            self.current_index -= 1
+        # Выход если файлы в списке изображений закончились
+        if self.count_files == 0:
+            print('изображений в папке больше нет')
+            sys.exit(0)
+
+        self.current_image = self.files_list[self.current_index]
+
+    def move_files(self, destination: str):
+        """
+        Перемещение всех файлов из каталога, за исключением подкаталогов
+        :param destination: каталог назначения в который перемещается исходный каталог
+        :return: None
+        """
+        # поиск первого изображения в текущем каталоге
+        current_dir = os.path.dirname(self.current_image)
+        while os.path.dirname(self.files_list[self.current_index]) == current_dir:
+            self.current_index -= 1
+            if self.current_index < 0:
+                self.current_index = 0
+                break
+        if self.current_index > 0:
+            self.current_index += 1
+        # Создание каталога назначения если он еще не создан
+        if os.path.isdir(destination) is False:
+            try:
+                os.mkdir(destination)
+            except (FileExistsError, PermissionError):
+                print('Не удалось сооздать каталог для выделяемых изображений')
+        # Путь к новому каталогу в каталоге назначения
+        name_dir = os.path.basename(current_dir)
+        destination_path = os.path.join(destination, name_dir)
+        # Изменение названия каталога в случае его существования на диске
+        i = 0
+        while os.path.isdir(destination_path):
+            i += 1
+            destination_path = destination_path + f'_{i}'
+        # Пытаемся создать каталог
+        try:
+            os.mkdir(destination_path)
+        except (FileExistsError, PermissionError):
+            print(f'Не удалось сооздать каталог {destination_path} для перемещаемых изображений')
+        # Перемещаем все изображения из текущей папки в новый каталог
+        file_path = self.files_list[self.current_index]
+        while os.path.dirname(file_path) == current_dir:
+            try:
+                shutil.move(file_path, destination_path)
+            except (FileExistsError, PermissionError):
+                shutil.copy(file_path, destination_path)
+            self.files_list.remove(file_path)
+            if self.current_index == len(self.files_list):
+                self.current_index -= 1
+            if self.current_index >= 0:
+                file_path = self.files_list[self.current_index]
+            else:
+                file_path = None
+        # Корректируем количество элементов в списке файлов
+        self.count_files = len(self.files_list)
+        # При отсутствии вложенных папок пробуем удалить исходный каталог
+        for _, dirs, _ in os.walk(current_dir):
+            break
+        if len(dirs) == 0:
+            try:
+                shutil.rmtree(current_dir)
+            except (FileExistsError, PermissionError):
+                print(f'Невозможно удалить каталог - {current_dir}')
+        # Выходим если список с изображениями пуст
+        if self.count_files == 0:
+            print('изображений в папке больше нет')
+            sys.exit(0)
+        # Назначаем новое текущее изображение
+        self.current_image = self.files_list[self.current_index]
+
     def next_image(self):
         """
         Установка следующего в списке изображения
@@ -139,166 +242,24 @@ class Files:
         """
         Отправляет изображение в папку Deleted
         """
-        if os.path.isdir(self.trash_path) is False:
-            try:
-                os.mkdir(self.trash_path)
-            except (FileExistsError, PermissionError):
-                print('Не удалось сооздать каталог для удаляемых изображений')
-
-        # проверка на существование файла с таким же имененем
-        destination = os.path.join(self.trash_path, os.path.split(self.current_image)[1])
-        i = 0
-        path, ext = os.path.splitext(destination)
-        while os.path.isfile(destination):
-            i += 1
-            new_path = path + f'_{i}'
-            destination = new_path + ext
-        try:
-            shutil.move(self.current_image, destination)
-        except (FileExistsError, PermissionError):
-            shutil.copy(self.current_image, destination)
-            print(f'не удалось переместить файл - {self.current_image}')
-        self.files_list.remove(self.current_image)
-
-        if self.count_files == 0:
-            print('изображений в папке больше нет')
-            sys.exit(0)
-        else:
-            if self.current_index == self.count_files - 1:
-                self.current_index -= 1
-            self.count_files = len(self.files_list)
-            self.current_image = self.files_list[self.current_index]
+        self.move_one_file(self.trash_path)
 
     def delete_dir(self):
         """
         Удаление каталога текущего изображения
         :return:
         """
-        # возврат к первому изображению в текущем каталоге
-        current_dir = os.path.dirname(self.current_image)
-        while os.path.dirname(self.files_list[self.current_index]) == current_dir:
-            self.current_index -= 1
-            if self.current_index < 0:
-                self.current_index = 0
-                break
-        if self.current_index > 0:
-            self.current_index += 1
-
-        # Создание каталога Deleted если он не существует
-        if os.path.isdir(self.trash_path) is False:
-            try:
-                os.mkdir(self.trash_path)
-            except (FileExistsError, PermissionError):
-                print(f'Не удалось сооздать каталог {self.trash_path} для удаляемых изображений')
-
-        # удаление всех изображений текущей папки из списка
-        file_path = self.files_list[self.current_index]
-        while os.path.dirname(file_path) == current_dir:
-            self.files_list.remove(file_path)
-            if self.current_index == self.count_files - 1:
-                self.current_index -= 1
-            file_path = self.files_list[self.current_index]
-        # перенос текущего каталога в корзину
-        try:
-            shutil.move(current_dir, self.trash_path)
-            # shutil.move(current_dir, destination_path)
-        except (FileExistsError, PermissionError) as e:
-            print("Error: %s : %s" % (current_dir, e.strerror))
-        self.count_files = len(self.files_list)
-
-        if self.count_files == 0:
-            print('изображений в папке больше нет')
-            sys.exit(0)
-
-        self.current_image = self.files_list[self.current_index]
+        self.move_files(destination=self.trash_path)
 
     def move_image(self):
         """
         Отправляет указанную картинку в папку Selected
         """
-        if os.path.isdir(self.select_path) is False:
-            try:
-                os.mkdir(self.select_path)
-            except (FileExistsError, PermissionError):
-                print('Не удалось сооздать каталог для выделяемых изображений')
-        if os.path.isdir(self.select_path):
-            # Генерация пути для перемещаемого файла
-            destination = os.path.join(self.select_path, os.path.split(self.current_image)[1])
-            i = 0
-            path, ext = os.path.splitext(destination)
-            while os.path.isfile(destination):
-                i += 1
-                new_path = path + f'_{i}'
-                destination = new_path + ext
-            # Перемещение файла в каталог
-            try:
-                shutil.move(self.current_image, destination)
-                self.files_list.remove(self.current_image)
-            except (FileExistsError, PermissionError):
-                shutil.copy(self.current_image, destination)
-                self.files_list.remove(self.current_image)
-            self.count_files = len(self.files_list)
-
-            if self.current_index > self.count_files - 1:
-                self.current_index = self.count_files - 1
-
-            if self.count_files == 0:
-                print('изображений в папке больше нет')
-                sys.exit(0)
-
-            self.current_image = self.files_list[self.current_index]
+        self.move_one_file(self.select_path)
 
     def move_dir(self):
         """
         Перемещение каталога текущего изображения в избранное
         :return:
         """
-        if os.path.isdir(self.select_path) is False:
-            try:
-                os.mkdir(self.select_path)
-            except (FileExistsError, PermissionError):
-                print('Не удалось сооздать каталог для выделяемых изображений')
-        if os.path.isdir(self.select_path):
-            # Создание каталога в папке Selected
-            destination_path = os.path.basename(os.path.dirname(self.current_image))
-            destination_path = os.path.join(self.select_path, destination_path)
-            if os.path.isdir(destination_path) is False:
-                try:
-                    os.mkdir(destination_path)
-                except (FileExistsError, PermissionError):
-                    print(f'Не удалось сооздать каталог {destination_path} для перемещаемых изображений')
-
-            # возврат к первому изображению в текущем каталоге
-            current_dir = os.path.dirname(self.current_image)
-            while os.path.dirname(self.files_list[self.current_index]) == current_dir:
-                self.current_index -= 1
-                if self.current_index < 0:
-                    self.current_index = 0
-                    break
-            if self.current_index > 0:
-                self.current_index += 1
-
-            # перемещение всех изображений из текущей папки
-            file_path = self.files_list[self.current_index]
-            while os.path.dirname(file_path) == current_dir:
-                try:
-                    shutil.move(file_path, destination_path)
-                except (FileExistsError, PermissionError):
-                    shutil.copy(file_path, destination_path)
-                self.files_list.remove(file_path)
-                if self.current_index == len(self.files_list):
-                    self.current_index -= 1
-                file_path = self.files_list[self.current_index]
-            self.count_files = len(self.files_list)
-
-            # удаление текущей папки
-            try:
-                shutil.rmtree(current_dir)
-            except (FileExistsError, PermissionError):
-                print(f'Невозможно удалить каталог - {current_dir}')
-
-            if self.count_files == 0:
-                print('изображений в папке больше нет')
-                sys.exit(0)
-
-            self.current_image = self.files_list[self.current_index]
+        self.move_files(destination=self.select_path)
