@@ -85,7 +85,7 @@ class StructureFolder(QTextEdit):
         self.main = parent
         self.previos_dir = None
         self.move(2, 30)
-        self.resize(300, self.main.view.height() - 60)
+        self.resize(400, self.main.view.height() - 60)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setStyleSheet('background:transparent;')
@@ -103,7 +103,7 @@ class StructureFolder(QTextEdit):
 
     def update(self):
         self.move(2, 30)
-        self.resize(300, self.main.view.height() - 60)
+        self.resize(400, self.main.view.height() - 60)
         folders = self.main.files.folder_list
         current_pos = None
         current_dir = os.path.dirname(self.main.files.current_image)

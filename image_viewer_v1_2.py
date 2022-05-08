@@ -2,7 +2,7 @@
 
 import os  # операции с файлами
 import sys  # аргументы командной строки
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QPainter, QMouseEvent
 from PyQt5.QtWidgets import (QWidget, QApplication, QGraphicsPixmapItem, QGraphicsScene,
                              QGraphicsView, QVBoxLayout, QMenuBar, QMenu, QFileDialog
                              )
@@ -21,18 +21,20 @@ class ImageViewer(QGraphicsView):
         self.setFocusPolicy(Qt.StrongFocus)
         self.scene.addItem(self.img_item)
         self.setScene(self.scene)
-        self.setRenderHint(4)
+        self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing |QPainter.SmoothPixmapTransform)
         self.current_pixmap = None
         self.current_img_width = 0
         self.current_img_height = 0
         self.ratio = 1
+        self.img_x = 0
+        self.img_y = 0
+        self.zoom_scale = False
 
-    def scale_image_view(self, default_scale=1):
-        # Масштабирование в представлении вида
+    def scale_image_view(self):
+        """Масштабирвоание изображение под размер экрана"""
         if self.current_pixmap:
-            self.resetTransform()
-            h = self.height()
             w = self.width()
+            h = self.height()
             ratio_view = w / h
             self.current_img_width = self.current_pixmap.width()
             self.current_img_height = self.current_pixmap.height()
@@ -43,33 +45,62 @@ class ImageViewer(QGraphicsView):
                     self.ratio = h / self.current_img_height
             except ZeroDivisionError:
                 self.ratio = ratio_view
-            self.scene.setSceneRect(0, 0, self.current_img_height * ratio_view, self.current_img_height)
+            self.image_w = round(self.current_img_width * self.ratio)
+            self.image_h = round(self.current_img_height * self.ratio)
+            # Корректировка размеров сцены под пропорции экрана
+            self.scene.setSceneRect(0, 0, w, h)
+            # Перегрузка изображения в графический компонент
+            self.img_item.setPixmap(self.current_pixmap.scaled(self.image_w, self.image_h,
+                                                               aspectRatioMode=1, transformMode=1))
             # Смещение изображения к центру
-            x = round((self.current_img_height * ratio_view - self.current_img_width) / 2)
-            self.img_item.setPos(x, 0)
-            if default_scale == 1:
-                self.scale(self.ratio, self.ratio)
-            else:
-                self.scale(default_scale, default_scale)
+            self.img_x = round((w - self.image_w) / 2)
+            self.img_y = round((h - self.image_h) / 2)
+            self.img_item.setPos(self.img_x, self.img_y)
 
-    def show_image(self, scale=1):
+    def show_image(self):
         try:
             self.current_pixmap = QPixmap(self.main.files.current_image)
         except FileNotFoundError:
             print('Ошибка открытия графического файлв')
             return
         self.img_item.setPixmap(self.current_pixmap)
-        self.scale_image_view(default_scale=scale)
+        self.scale_image_view()
 
     def mousePressEvent(self, event):
         # Обработка нажатия левой кнопки мыши
-        if event.button() == Qt.LeftButton:
-            self.show_image(scale=2)
+        if event.button() == Qt.LeftButton and self.current_pixmap:
+            self.setCursor(Qt.ClosedHandCursor)
+            w = self.width()
+            h = self.height()
+            x = event.pos().x()
+            y = event.pos().y()
+            proc_x = (x - (w - self.image_w) / 2) / self.image_w
+            proc_y = (y - (h - self.image_h) / 2) / self.image_h
+            self.img_x = round((w - self.current_pixmap.width()) * proc_x)
+            self.img_y = round((h - self.current_pixmap.height()) * proc_y)
+            self.img_item.setPixmap(self.current_pixmap)
+            self.img_item.setPos(self.img_x, self.img_y)
+            self.zoom_scale = True
 
     def mouseReleaseEvent(self, event):
         # Обработка снятия нажатия левой кнопки мыши
-        if event.button() == Qt.LeftButton:
-            self.show_image(scale=1)
+        if event.button() == Qt.LeftButton and self.current_pixmap:
+            self.zoom_scale = False
+            self.show_image()
+            self.setCursor(Qt.ArrowCursor)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Обработка перемещения мыши при увеличении изображения"""
+        if self.current_pixmap:
+            w = self.width()
+            h = self.height()
+            x = event.pos().x()
+            y = event.pos().y()
+            proc_x = x / w
+            proc_y = y / h
+            self.img_x = (w - self.current_pixmap.width()) * proc_x
+            self.img_y = (h - self.current_pixmap.height()) * proc_y
+            self.img_item.setPos(self.img_x, self.img_y)
 
 
 class MainWindow(QWidget):

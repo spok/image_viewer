@@ -153,7 +153,7 @@ class Files:
             if self.current_index >= 0:
                 file_path = self.files_list[self.current_index]
             else:
-                file_path = None
+                file_path = ''
         # Корректируем количество элементов в списке файлов
         self.count_files = len(self.files_list)
         # При отсутствии вложенных папок пробуем удалить исходный каталог
