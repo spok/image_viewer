@@ -1,1 +1,1 @@
-__all__ = ['files', 'label']
+__all__ = ['files', 'label', 'images']
