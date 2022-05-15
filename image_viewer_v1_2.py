@@ -67,6 +67,8 @@ class MainWindow(QWidget):
             self.view.setVisible(True)
         self.view.show_image()
         self.info_label.update()
+        self.label2.setText(f'Количество каталогов: {len(self.files.folder_list)}, '
+                            f'количество файлов: {self.files.count_files}')
 
     def exit_programm(self):
         """Выход из программы"""
