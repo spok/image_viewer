@@ -21,7 +21,7 @@ class Files:
         self.available_extensions = ('.bmp', '.pbm', '.pgm', '.ppm', '.xbm',
                                      '.xpm', '.jpg', '.jpeg', '.png', '.gif'
                                      )
-        self.folder_list = dict()
+        self.folder_list = []
 
     def scan_folder(self, path):
         """
@@ -32,7 +32,7 @@ class Files:
         self.trash_path = os.path.join(self.current_folder, '___Deleted')
         self.select_path = os.path.join(self.current_folder, '___Selected')
         self.files_list = []  # очистка списка изображений
-        self.folder_list = dict()
+        self.folder_list = []
         try:
             for dirpath, dirnames, files in os.walk(path):
                 if len(files) > 0:
@@ -44,7 +44,7 @@ class Files:
                                 count += 1
                         if count > 0:
                             level = dirpath.replace(path, '').count(os.sep)
-                            self.folder_list[os.path.abspath(dirpath)] = [os.path.basename(dirpath), level, count]
+                            self.folder_list.append((os.path.abspath(dirpath), os.path.basename(dirpath), level, count))
             self.current_image = self.files_list[0]
             self.current_index = 0
             self.count_files = len(self.files_list)

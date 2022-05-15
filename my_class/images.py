@@ -18,6 +18,7 @@ class FilesStructure:
         self.bold_font = QFont('Liberation Serif', self.font_size)
         self.bold_font.setBold(True)
         self.text_color = QColor("#00ff00")
+        self.is_visible = True
 
     def clear_text_items(self):
         """
@@ -36,43 +37,65 @@ class FilesStructure:
         :return: None
         """
         self.clear_text_items()
-        folders = self.main.files.folder_list
-        current_dir = os.path.dirname(self.main.files.current_image)
-        if len(folders) > 0:
-            y = 5
-            x = 5
-            for key in folders:
-                # Элемент с названием каталога
-                name_text = QGraphicsTextItem()
-                text = folders[key][0]
-                name_text.setPlainText(text)
-                if os.path.abspath(key) == current_dir:
-                    name_text.setFont(self.bold_font)
-                else:
-                    name_text.setFont(self.normal_font)
-                name_text.setDefaultTextColor(self.text_color)
-                self.scene.addItem(name_text)
-                # Сокращение длинных названий каталогов
-                w = name_text.sceneBoundingRect().width()
-                h = name_text.sceneBoundingRect().height()
-                max_width = self.width_pixel_name - 15 * folders[key][1]
-                if w > max_width:
-                    count_char = round(max_width / w * len(text)) - 3
-                    if count_char > 0:
-                        text = text[:count_char] + '...'
-                name_text.setPlainText(text)
-                # Элемент с количеством файлов в каталоге
-                count_text = QGraphicsTextItem()
-                count_text.setPlainText(str(folders[key][2]))
-                count_text.setFont(self.normal_font)
-                count_text.setDefaultTextColor(self.text_color)
-                self.scene.addItem(count_text)
-                # Определение положения на сцене
-                x = 5 + 15 * folders[key][1]
-                name_text.setPos(x, y)
-                count_text.setPos(x + max_width + 20, y)
-                y += h + 4
-                self.items.append((name_text, count_text))
+        if self.is_visible:
+            vertical_step = 20
+            full_screen_count = round((self.main.height() - 50) / vertical_step)
+            half_screen_count = round(full_screen_count / 2)
+            folders = self.main.files.folder_list
+            current_dir = os.path.dirname(self.main.files.current_image)
+            count_dir = len(folders)
+            if count_dir > 0:
+                # Определение текущего индекса каталога в списке
+                for i, item in enumerate(folders):
+                    if item[0] == current_dir:
+                        current_index = i
+                        break
+                # Определение отображаемого диапазона списка каталогов
+                start_index = 0
+                end_index = count_dir
+                if full_screen_count < count_dir:
+                    if current_index < half_screen_count:
+                        end_index = full_screen_count
+                    else:
+                        start_index = current_index - half_screen_count
+                        if start_index < 0:
+                            start_index = 0
+                        end_index = current_index + half_screen_count
+                # Отображение среза списка каталогов
+                y = 5
+                x = 5
+                for item in folders[start_index:end_index]:
+                    # Элемент с названием каталога
+                    name_text = QGraphicsTextItem()
+                    text = item[1]
+                    name_text.setPlainText(text)
+                    if item[0] == current_dir:
+                        name_text.setFont(self.bold_font)
+                    else:
+                        name_text.setFont(self.normal_font)
+                    name_text.setDefaultTextColor(self.text_color)
+                    self.scene.addItem(name_text)
+                    # Сокращение длинных названий каталогов
+                    w = name_text.sceneBoundingRect().width()
+                    h = name_text.sceneBoundingRect().height()
+                    max_width = self.width_pixel_name - 15 * item[2]
+                    if w > max_width:
+                        count_char = round(max_width / w * len(text)) - 3
+                        if count_char > 0:
+                            text = text[:count_char] + '...'
+                    name_text.setPlainText(text)
+                    # Элемент с количеством файлов в каталоге
+                    count_text = QGraphicsTextItem()
+                    count_text.setPlainText(str(item[3]))
+                    count_text.setFont(self.normal_font)
+                    count_text.setDefaultTextColor(self.text_color)
+                    self.scene.addItem(count_text)
+                    # Определение положения на сцене
+                    x = 5 + 15 * item[2]
+                    name_text.setPos(x, y)
+                    count_text.setPos(x + max_width + 20, y)
+                    y += vertical_step
+                    self.items.append((name_text, count_text))
 
 
 class ImageViewer(QGraphicsView):

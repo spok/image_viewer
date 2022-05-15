@@ -74,6 +74,6 @@ class InfoLabel(QLabel):
                             file_name, width, height, size[0], size[1], index, count
                     )
             )
-            self.move(10, self.parent.height() - 30)
+            self.move(10, self.parent.view.height() - 30)
             self.adjustSize()
             self.raise_()

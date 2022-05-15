@@ -2,7 +2,7 @@
 
 import os  # операции с файлами
 import sys  # аргументы командной строки
-from PyQt5.QtWidgets import (QWidget, QApplication, QVBoxLayout, QMenuBar, QMenu, QFileDialog)
+from PyQt5.QtWidgets import (QWidget, QApplication, QVBoxLayout, QMenuBar, QMenu, QFileDialog, QLabel)
 from PyQt5.QtCore import Qt
 from my_class import *
 
@@ -51,6 +51,10 @@ class MainWindow(QWidget):
         self.vbox.setContentsMargins(4, 24, 4, 4)
         self.current_dir = None
         self.current_fullscreen = False
+        # Добавление нижней панели
+        self.label2 = QLabel('Количество каталогов: 0, количество файлов: 0')
+        self.label2.setMaximumHeight(30)
+        self.vbox.addWidget(self.label2)
         app.focusChanged.connect(self.onFocusChanged)
 
     def onFocusChanged(self):
@@ -78,10 +82,12 @@ class MainWindow(QWidget):
         self.current_fullscreen = not self.current_fullscreen
         if self.current_fullscreen:
             self.menu.setVisible(False)
+            self.label2.setVisible(False)
             self.vbox.setContentsMargins(0, 0, 0, 0)
             self.showFullScreen()
         else:
             self.menu.setVisible(True)
+            self.label2.setVisible(True)
             self.vbox.setContentsMargins(4, 24, 4, 4)
             self.showNormal()
 
@@ -94,9 +100,11 @@ class MainWindow(QWidget):
 
     def show_info_subfolder(self):
         if self.view_subdir.isChecked():
-            self.structure.setVisible(True)
-        elif self.structure.isVisible():
-            self.structure.setVisible(False)
+            self.view.structure.is_visible = True
+            self.view.structure.update()
+        elif self.view.structure.is_visible:
+            self.view.structure.is_visible = False
+            self.view.structure.update()
 
     def update_image(self):
         self.setWindowTitle(os.path.basename(self.files.current_image))
@@ -105,6 +113,7 @@ class MainWindow(QWidget):
     def resizeEvent(self, event):
         # Перерисовка изображения при изменении размера
         self.view.scale_image_view()
+        self.view.structure.update()
         self.info_label.update()
 
     def keyPressEvent(self, event):
