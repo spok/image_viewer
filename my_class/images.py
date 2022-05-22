@@ -1,5 +1,5 @@
 import os
-from PyQt5.QtGui import QPixmap, QPainter, QMouseEvent, QFont, QPalette, QColor
+from PyQt5.QtGui import QPixmap, QPainter, QMouseEvent, QFont, QColor
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QGraphicsTextItem
                              )
 from PyQt5.QtCore import Qt
@@ -44,6 +44,7 @@ class FilesStructure:
             folders = self.main.files.folder_list
             current_dir = os.path.dirname(self.main.files.current_image)
             count_dir = len(folders)
+            current_index = 0
             if count_dir > 0:
                 # Определение текущего индекса каталога в списке
                 for i, item in enumerate(folders):

@@ -1,6 +1,6 @@
 import os  # операции с файлами
-from PyQt5.QtWidgets import (QLabel, QGraphicsDropShadowEffect, QTextEdit)
-from PyQt5.QtGui import (QColor, QFont, QTextCursor)
+from PyQt5.QtWidgets import (QLabel, QGraphicsDropShadowEffect)
+from PyQt5.QtGui import (QColor, QFont)
 from PyQt5.QtCore import Qt
 
 
@@ -29,9 +29,11 @@ class MyLabel(QLabel):
     def dropEvent(self, e):
         drop_path = [u.toLocalFile() for u in e.mimeData().urls()]
         path = drop_path[0]
-        self.parent.files.scan_folder(path)
+        self.parent.scan_thread.path = path
+        self.parent.scan_thread.start()
+        self.parent.files.path = path
         self.parent.resize(800, 600)
-        self.parent.show_image()
+        # self.parent.show_image()
 
 
 class InfoLabel(QLabel):
@@ -60,7 +62,7 @@ class InfoLabel(QLabel):
         self.show()
 
     def update(self):
-        count = self.files.count_files
+        count = len(self.files.files_list)
         if count > 0:
             index = self.files.current_index + 1
             file_name = os.path.basename(os.path.dirname(self.files.current_image)) + ' -> '\

@@ -1,7 +1,40 @@
 import os  # операции с файлами
 import sys  # аргументы командной строки
 import shutil  # для удаления файлов
-from PyQt5.QtCore import QFileInfo
+import time
+from PyQt5.QtCore import QFileInfo, QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt
+
+
+class ScanThread(QThread):
+    mysignal = pyqtSignal(list, list)
+
+    def __init__(self, parent=None):
+        super().__init__()
+        self.main = parent
+        self.path = ''
+        self.files_list = []
+        self.folder_list = []
+        self.available_extensions = ('.bmp', '.pbm', '.pgm', '.ppm', '.xbm',
+                                     '.xpm', '.jpg', '.jpeg', '.png', '.gif'
+                                     )
+
+    def run(self):
+        cur_time = time.time()
+        for dirpath, dirnames, files in os.walk(self.path):
+            if len(files) > 0:
+                if ('___Selected' not in dirpath) and ('___Deleted' not in dirpath):
+                    count = 0
+                    for name in files:
+                        if os.path.splitext(name)[1].lower() in self.available_extensions:
+                            self.files_list.append(os.path.join(os.path.abspath(dirpath), name))
+                            count += 1
+                    if count > 0:
+                        level = dirpath.replace(self.path, '').count(os.sep)
+                        self.folder_list.append((os.path.abspath(dirpath), os.path.basename(dirpath), level, count))
+            if time.time() - cur_time > 1.0:
+                cur_time = time.time()
+                self.mysignal.emit(self.files_list, self.folder_list)
 
 
 class Files:
@@ -10,47 +43,30 @@ class Files:
     """
 
     def __init__(self):
+        self.root_path = ''
         self.files_list = []
+        self.folder_list = []
         self.current_folder = ''
         self.current_image = ''
         self.last_image = ''
         self.trash_path = ''
         self.select_path = ''
         self.current_index = 0
-        self.count_files = 0
-        self.available_extensions = ('.bmp', '.pbm', '.pgm', '.ppm', '.xbm',
-                                     '.xpm', '.jpg', '.jpeg', '.png', '.gif'
-                                     )
-        self.folder_list = []
 
-    def scan_folder(self, path):
-        """
-        создаёт список изобр. папки -> self.files
-        """
-        self.current_folder = os.path.abspath(path)
-        self.current_image = ''
-        self.trash_path = os.path.join(self.current_folder, '___Deleted')
-        self.select_path = os.path.join(self.current_folder, '___Selected')
-        self.files_list = []  # очистка списка изображений
-        self.folder_list = []
-        try:
-            for dirpath, dirnames, files in os.walk(path):
-                if len(files) > 0:
-                    if ('___Selected' not in dirpath) and ('___Deleted' not in dirpath):
-                        count = 0
-                        for name in files:
-                            if os.path.splitext(name)[1].lower() in self.available_extensions:
-                                self.files_list.append(os.path.join(os.path.abspath(dirpath), name))
-                                count += 1
-                        if count > 0:
-                            level = dirpath.replace(path, '').count(os.sep)
-                            self.folder_list.append((os.path.abspath(dirpath), os.path.basename(dirpath), level, count))
-            self.current_image = self.files_list[0]
-            self.current_index = 0
-            self.count_files = len(self.files_list)
-        except FileNotFoundError:
-            print('Ошибка с открытием файлов')
-            sys.exit(0)
+    @property
+    def path(self):
+        return self.root_path
+
+    @path.setter
+    def path(self, path):
+        if isinstance(path, str):
+            self.root_path = path
+            self.current_folder = os.path.abspath(path)
+            self.current_image = ''
+            self.trash_path = os.path.join(self.current_folder, '___Deleted')
+            self.select_path = os.path.join(self.current_folder, '___Selected')
+            self.files_list = []
+            self.folder_list = []
 
     def file_size(self):
         """
@@ -95,12 +111,11 @@ class Files:
             shutil.copy(self.current_image, destination_new)
         # Удаление перемещенного файла из списка изображений
         self.files_list.remove(self.current_image)
-        self.count_files = len(self.files_list)
         # Смещение текущего индекса при удалении последнего в списке файла
-        if self.current_index > self.count_files - 1:
+        if self.current_index > len(self.files_list) - 1:
             self.current_index -= 1
         # Выход если файлы в списке изображений закончились
-        if self.count_files == 0:
+        if len(self.files_list) == 0:
             print('изображений в папке больше нет')
             sys.exit(0)
 
@@ -155,7 +170,6 @@ class Files:
             else:
                 file_path = ''
         # Корректируем количество элементов в списке файлов
-        self.count_files = len(self.files_list)
         # При отсутствии вложенных папок пробуем удалить исходный каталог
         for _, dirs, _ in os.walk(current_dir):
             break
@@ -165,7 +179,7 @@ class Files:
             except (FileExistsError, PermissionError):
                 print(f'Невозможно удалить каталог - {current_dir}')
         # Выходим если список с изображениями пуст
-        if self.count_files == 0:
+        if len(self.files_list) == 0:
             print('изображений в папке больше нет')
             sys.exit(0)
         # Назначаем новое текущее изображение
@@ -176,11 +190,11 @@ class Files:
         Установка следующего в списке изображения
         """
         # если списко с изображениями пуст -> выход
-        if self.count_files == 0:
+        if len(self.files_list) == 0:
             print('Изображений в указанном каталоге нет')
             sys.exit(0)
         else:
-            if self.current_index <= self.count_files - 2:
+            if self.current_index <= len(self.files_list) - 2:
                 self.current_index += 1
                 self.current_image = self.files_list[self.current_index]
             else:
@@ -193,10 +207,10 @@ class Files:
         """
         current_dir = os.path.split(self.current_image)[0]
         while current_dir == os.path.split(self.files_list[self.current_index])[0] and \
-            self.current_index < self.count_files:
+            self.current_index < len(self.files_list):
             self.current_index += 1
-            if self.current_index == self.count_files:
-                self.current_index = self.count_files - 1
+            if self.current_index == len(self.files_list):
+                self.current_index = len(self.files_list) - 1
                 break
         self.current_image = self.files_list[self.current_index]
 
@@ -205,7 +219,7 @@ class Files:
         Установка предыдующего в списке изображения
         """
         # если список с изображениями пуст -> выход
-        if self.count_files == 0:
+        if len(self.files_list) == 0:
             print('Изображений в указанном каталоге нет')
             sys.exit(0)
         else:

@@ -42,6 +42,7 @@ class MainWindow(QWidget):
         self.view = images.ImageViewer(self)
         self.files = files.Files()
         self.info_label = label.InfoLabel(self)
+        self.scan_thread = files.ScanThread(self)
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.view)
         self.view.setVisible(False)
@@ -56,6 +57,14 @@ class MainWindow(QWidget):
         self.label2.setMaximumHeight(30)
         self.vbox.addWidget(self.label2)
         app.focusChanged.connect(self.onFocusChanged)
+        self.scan_thread.mysignal.connect(self.show_progress, Qt.QueuedConnection)
+        self.scan_thread.finished.connect(self.end_scan)
+
+    def end_scan(self):
+        self.files.files_list = self.scan_thread.files_list
+        self.files.folder_list = self.scan_thread.folder_list
+        self.label2.setText(f'Количество каталогов: {len(self.files.folder_list)}, '
+                            f'количество файлов: {len(self.files.files_list)}')
 
     def onFocusChanged(self):
         self.setFocus()
@@ -65,13 +74,31 @@ class MainWindow(QWidget):
             self.label.setVisible(False)
         if not self.view.isVisible():
             self.view.setVisible(True)
-        self.view.show_image()
-        self.info_label.update()
-        self.label2.setText(f'Количество каталогов: {len(self.files.folder_list)}, '
-                            f'количество файлов: {self.files.count_files}')
+        if len(self.files.files_list) > 0:
+            self.view.show_image()
+            self.info_label.update()
+        if self.scan_thread.isFinished():
+            self.label2.setText(f'Количество каталогов: {len(self.files.folder_list)}, '
+                                f'количество файлов: {len(self.files.files_list)}')
+
+    def show_progress(self, files: list, folders: list):
+        """
+        Отображение на label прогресса сканирования структуры каталогов
+        :return:
+        """
+        self.files.files_list = files
+        self.files.folder_list = folders
+        if self.files.current_image == '':
+            self.files.current_image = self.files.files_list[0]
+            self.files.current_index = 0
+        self.show_image()
+        self.label2.setText(f'Сканирование выполняется... Количество каталогов: {len(self.files.folder_list)}, '
+                            f'количество файлов: {len(self.files.files_list)}')
 
     def exit_programm(self):
         """Выход из программы"""
+        del files.ScanThread
+        del files.Files
         QApplication.quit()
 
     def open_dir_dialog(self):
