@@ -33,7 +33,6 @@ class MyLabel(QLabel):
         self.parent.scan_thread.start()
         self.parent.files.path = path
         self.parent.resize(800, 600)
-        # self.parent.show_image()
 
 
 class InfoLabel(QLabel):

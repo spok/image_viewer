@@ -69,17 +69,40 @@ class MainWindow(QWidget):
     def onFocusChanged(self):
         self.setFocus()
 
+    def to_view_image(self):
+        """
+        Отображение графических элементов для просмотра изображений
+        :return:
+        """
+        self.label.setVisible(False)
+        self.view.setVisible(True)
+
+    def to_drop_down(self):
+        """
+        Отображение графических элементов для передачи каталога просмотра
+        :return:
+        """
+        self.label.setVisible(True)
+        self.view.setVisible(False)
+
+    def show_scan_result(self):
+        """
+        Отображение количества каталогов и файлов
+        :return:
+        """
+        if self.scan_thread.isRunning():
+            self.label2.setText(f'Сканирование выполняется... Количество каталогов: {len(self.files.folder_list)}, '
+                                f'количество файлов: {len(self.files.files_list)}')
+        else:
+            self.label2.setText(f'Количество каталогов: {len(self.files.folder_list)}, '
+                                f'количество файлов: {len(self.files.files_list)}')
+
     def show_image(self):
-        if self.label.isVisible():
-            self.label.setVisible(False)
-        if not self.view.isVisible():
-            self.view.setVisible(True)
+        self.to_view_image()
         if len(self.files.files_list) > 0:
             self.view.show_image()
             self.info_label.update()
-        if self.scan_thread.isFinished():
-            self.label2.setText(f'Количество каталогов: {len(self.files.folder_list)}, '
-                                f'количество файлов: {len(self.files.files_list)}')
+        self.show_scan_result()
 
     def show_progress(self, files: list, folders: list):
         """
@@ -91,9 +114,8 @@ class MainWindow(QWidget):
         if self.files.current_image == '':
             self.files.current_image = self.files.files_list[0]
             self.files.current_index = 0
-        self.show_image()
-        self.label2.setText(f'Сканирование выполняется... Количество каталогов: {len(self.files.folder_list)}, '
-                            f'количество файлов: {len(self.files.files_list)}')
+            self.show_image()
+        self.show_scan_result()
 
     def exit_programm(self):
         """Выход из программы"""
@@ -104,7 +126,8 @@ class MainWindow(QWidget):
     def open_dir_dialog(self):
         """Выбор каталога для просмотра изображений"""
         self.current_dir = self.open_dialog.getExistingDirectory()
-        self.files.scan_folder(self.current_dir)
+        self.scan_thread.path = self.current_dir
+        self.scan_thread.start()
 
     def fullscreen_mode(self):
         # Переключение полноэкранного режима

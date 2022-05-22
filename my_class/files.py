@@ -35,6 +35,7 @@ class ScanThread(QThread):
             if time.time() - cur_time > 1.0:
                 cur_time = time.time()
                 self.mysignal.emit(self.files_list, self.folder_list)
+        self.mysignal.emit(self.files_list, self.folder_list)
 
 
 class Files:
