@@ -103,7 +103,7 @@ class Files:
         path, ext = os.path.splitext(destination_new)
         while os.path.isfile(destination_new):
             i += 1
-            new_path = path + f'_{i}'
+            new_path = path + f'_{i:03d}'
             destination_new = new_path + ext
         # Перемещение файла в каталог назначения
         try:
@@ -146,11 +146,12 @@ class Files:
         # Путь к новому каталогу в каталоге назначения
         name_dir = os.path.basename(current_dir)
         destination_path = os.path.join(destination, name_dir)
+        source_path = destination_path
         # Изменение названия каталога в случае его существования на диске
         i = 0
         while os.path.isdir(destination_path):
             i += 1
-            destination_path = destination_path + f'_{i}'
+            destination_path = source_path + f'_{i:03d}'
         # Пытаемся создать каталог
         try:
             os.mkdir(destination_path)

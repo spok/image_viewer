@@ -168,6 +168,16 @@ class MainWindow(QWidget):
         self.view.structure.update()
         self.info_label.update()
 
+    def del_dir_in_list(self):
+        """
+        Удаление текущего каталога из списка каталогов
+        :return:
+        """
+        key = os.path.dirname(self.files.current_image)
+        index = [i for i, elem in enumerate(self.files.folder_list) if elem[0] == key]
+        if len(index):
+            del self.files.folder_list[index[0]]
+
     def keyPressEvent(self, event):
         """
         Обработка нажатий клавиш клавиатуры
@@ -206,14 +216,12 @@ class MainWindow(QWidget):
                 self.update_image()
             # перемещение просматриваемого каталога в избранное
             elif event.key() == Qt.Key_Insert:
-                key = os.path.dirname(self.files.current_image)
-                del self.files.folder_list[key]
+                self.del_dir_in_list()
                 self.files.move_dir()
                 self.update_image()
             # перемещение просматриваемого каталога в корзину
             elif event.key() == Qt.Key_Delete:
-                key = os.path.dirname(self.files.current_image)
-                del self.files.folder_list[key]
+                self.del_dir_in_list()
                 self.files.delete_dir()
                 self.update_image()
 
